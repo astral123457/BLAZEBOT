@@ -68,3 +68,15 @@ Comandos de Movimento:
 !subir: Realiza uma sequência de pulos (3 pulos com intervalos de 400 ms) simulando a ação de subir;
 
 !descer: Ativa o controle de "sneak" (agachar) por 3 segundos, ajudando a descer com segurança.
+
+![image](https://github.com/user-attachments/assets/93025053-73fb-4e49-8cd8-77332714f014)
+
+Quando logar, o bot exibirá algo como:
+
+Online [BOT_ID:1234]
+
+Use esse número (nesse exemplo, 1234) para os comandos admin.
+mas voce deve estar na lista de admin do boot
+
+!admin 4027 /playsound minecraft:ambient.cave ambient @a ~ ~ ~ 1 1 0
+
