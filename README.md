@@ -10,6 +10,10 @@ Install modules
               cd nome-do-projeto
               
               npm init -y 
+
+              npm install --no-audit
+
+              npm set audit false
               
               npm install mineflayer mineflayer-pathfinder minecraft-data
               
@@ -21,8 +25,17 @@ Install modules
               
               ve o numero e digita kill 00000
 
+# Dica varivel global que uso
 
-Depedecia llama3.2
+use o PowerShell como admin e executa isto:
+
+          [System.Environment]::SetEnvironmentVariable("NODE_HOME", "C:\Program Files\nodejs", "Machine")
+
+PS C:\Users\astra\OneDrive\Área de Trabalho\aurora> node AURORA.js
+AURORA conectada com sucesso ao servidor!
+
+
+# Depedecia llama3.2
 
 https://github.com/ollama/ollama
      
