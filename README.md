@@ -31,8 +31,9 @@ use o PowerShell como admin e executa isto:
 
           [System.Environment]::SetEnvironmentVariable("NODE_HOME", "C:\Program Files\nodejs", "Machine")
 
-PS C:\Users\astra\OneDrive\Área de Trabalho\aurora> node AURORA.js
-AURORA conectada com sucesso ao servidor!
+          PS C:\Users\astra\OneDrive\Área de Trabalho\aurora> node AURORA.js
+
+          AURORA conectada com sucesso ao servidor!
 
 
 # Depedecia llama3.2
