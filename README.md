@@ -3,7 +3,7 @@
           screen -r ANNA
           screen -ls
           kill 00000
-# programs do projeto 
+# Programs do projeto 
 https://nodejs.org/en/download
 
 # Install modules
@@ -29,7 +29,7 @@ https://nodejs.org/en/download
 
 # Dica varivel global que uso
 
-use o PowerShell como admin e executa isto:
+Use o PowerShell como admin e executa isto:
 
           [System.Environment]::SetEnvironmentVariable("NODE_HOME", "C:\Program Files\nodejs", "Machine")
 
@@ -48,9 +48,9 @@ ollama run llama3.2 para pc fracos com baixa memoria ram
 
 ja o Bot AURORA usa: DeepSeek-R1	7B	4.7GB	ollama run deepseek-r1
 
-a varias ai para usar cad uma com seu niveu de memoria ram
+Seu niveu de memoria ram
 
-## Model library
+## Modelos de AI Tabela 2025
 
 
 | Model              | Parameters | Size  | Download                         |
