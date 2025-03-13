@@ -3,8 +3,10 @@
           screen -r ANNA
           screen -ls
           kill 00000
+# programs do projeto 
+https://nodejs.org/en/download
 
-Install modules
+# Install modules
               mkdir nome-do-projeto
 
               cd nome-do-projeto
