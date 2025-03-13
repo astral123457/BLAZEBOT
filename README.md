@@ -57,7 +57,7 @@ Mensagens que começam com "anna " ou "!ia "
 
 "oi", o bot responde de forma padrão ("anna oi tudo bem"). 
 
-faz uma requisição POST para a API (supostamente um endpoint local com o modelo llama3.2) e retorna a resposta da IA no chat do jogo.
+faz uma requisição POST para a API (supostamente um endpoint local com o modelo llama3.2 e retorna a resposta da IA no chat do jogo.
 
 Comando !seguir: Quando um jogador digita esse comando, o bot identifica a entidade do jogador que enviou a mensagem e ativa um objetivo (GoalFollow) do plugin pathfinder para segui-lo mantendo uma distância de 1 bloco.
 
