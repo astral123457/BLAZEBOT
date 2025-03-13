@@ -16,3 +16,23 @@ Install modules
      
       
 ![image](https://github.com/user-attachments/assets/e0ba7a84-16a0-4a9b-badd-75350d4e3928)
+
+
+ [Início: Bot se conecta]
+                     │
+                     ▼
+       [Evento: 'login' é disparado]
+                     │
+                     ▼
+         [Carrega plugin pathfinder]
+                     │
+                     ▼
+         [Aguarda comandos no chat]
+                     │
+       ┌─────────────┼─────────────┐
+       │                           │
+       ▼                           ▼
+[Comando: anna/!ia ...]   [Outros comandos (!seguir, !pular, !subir, !descer)]
+       │                           │
+       ▼                           ▼
+[Requisição à API e resposta]   [Executa ação no jogo]
