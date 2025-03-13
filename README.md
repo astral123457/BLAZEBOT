@@ -1,4 +1,4 @@
-# Bot do Minecraft executar comandos executa eles exemplo: 
+# Bot do Minecraft com inteligecia da Ai executar comandos executa eles exemplo: 
           screen -A -m -d -S ANNA node ANNABEL.js
           screen -r ANNA
           screen -ls
