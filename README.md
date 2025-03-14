@@ -154,4 +154,7 @@ Digite taskschd.msc e pressione Enter. Isso abrirá diretamente o Agendador de T
 
 3 Diretorio: C:\Users\astra\OneDrive\Área de Trabalho\aurora
 
+![image](https://github.com/user-attachments/assets/564ffcff-8a54-4d43-b406-96568e3767c2)
+
+
 
