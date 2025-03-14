@@ -3,6 +3,47 @@
           screen -r ANNA
           screen -ls
           kill 00000
+# Fluxo Grama
+```mermaid
+graph TD;
+    Inicio --> Configuração_do_bot
+    Configuração_do_bot --> Login_do_bot
+    Login_do_bot --> Nova_entidade_detectada?
+    Nova_entidade_detectada? --> Sim_E_Verificar_se_é_mob_hostil
+    Sim_E_Verificar_se_é_mob_hostil --> hostil?
+    hostil? --> Sim_Equipar_espada_e_atacar
+    hostil? --> Não_Ignorar_entidade
+    Sim_Equipar_espada_e_atacar --> Fim
+    Não_Ignorar_entidade --> Fim
+    
+    Login_do_bot --> Comando_recebido_via_chat
+    Comando_recebido_via_chat --> Comando_TPA?
+    Comando_TPA? --> Sim_Enviar_solicitação_TPA
+    Sim_Enviar_solicitação_TPA --> Fim
+
+    Comando_recebido_via_chat --> Sim_Seguir_jogador
+    Sim_Seguir_jogador --> Fim
+    Comando_recebido_via_chat --> Não_Comando_dormir?
+    Não_Comando_dormir? --> Fim
+    Comando_recebido_via_chat --> Sim_Procurar_cama_e_dormir
+    Sim_Procurar_cama_e_dormir --> Fim
+    Comando_recebido_via_chat --> Não_Comando_atacar?
+    Não_Comando_atacar? --> Fim
+    Comando_recebido_via_chat --> Sim_Buscar_mob_e_atacar
+    Sim_Buscar_mob_e_atacar --> Fim
+    Comando_recebido_via_chat --> Não_Comando_equipar?
+    Não_Comando_equipar? --> Fim
+    Comando_recebido_via_chat --> Sim_Equipar_espada_e_armaduras
+    Sim_Equipar_espada_e_armaduras --> Fim
+    Comando_recebido_via_chat --> Não_Comando_pular/subir/descer?
+    Não_Comando_pular/subir/descer? --> Fim
+    Comando_recebido_via_chat --> Sim_Executar_ação_física
+    Sim_Executar_ação_física --> Fim
+    Comando_recebido_via_chat --> Não_Comando_admin?
+    Não_Comando_admin? --> Fim
+    Comando_recebido_via_chat --> Sim_Validar_código_e_executar_comando
+    Sim_Validar_código_e_executar_comando --> Fim
+```
 ![image](https://github.com/user-attachments/assets/c8564722-0171-4fb4-8b81-b459d966686a)
 
 # Programs do projeto 
