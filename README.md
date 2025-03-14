@@ -3,6 +3,8 @@
           screen -r ANNA
           screen -ls
           kill 00000
+![image](https://github.com/user-attachments/assets/c8564722-0171-4fb4-8b81-b459d966686a)
+
 # Programs do projeto 
 https://nodejs.org/en/download
 
