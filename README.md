@@ -140,3 +140,18 @@ mas voce deve estar na lista de admin do boot
 
 !admin 4027 /playsound minecraft:ambient.cave ambient @a ~ ~ ~ 1 1 0
 
+![image](https://github.com/user-attachments/assets/864f59c3-bad9-4edc-acf9-93f7bf6a1d05)
+
+Agendador de tarefas
+
+Pressione as teclas Windows + R no teclado para abrir o Executar.
+
+Digite taskschd.msc e pressione Enter. Isso abrirá diretamente o Agendador de Tarefas.
+
+1 exemplo no meu caso Programa/Script: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+
+2 argumento: -ExecutionPolicy Bypass -File "Aurora.ps1"
+
+3 Diretorio: C:\Users\astra\OneDrive\Área de Trabalho\aurora
+
+
