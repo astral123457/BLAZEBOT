@@ -6,7 +6,7 @@ const Vec3 = require('vec3'); // Necessário para lidar com vetores
 
 // Configuração do bot
 const botConfig = {
-  host: '192.168.100.170',   // IP do servidor Minecraft
+  host: '26.246.250.157',   // IP do servidor Minecraft
   port: 27215,               // Porta do servidor
   username: 'AURORA',        // Nome do bot
   auth: 'offline',           // Modo offline (para online use 'mojang')
@@ -62,7 +62,7 @@ async function defenderContraMob(mob) {
     // Se o mob não for mais válido ou (se disponível) estiver com saúde 0 ou inferior, finaliza o ataque
 	// Verifica se há blocos ou madeira na frente
  
-    if (!mob || !mob.isValid || (mob.health !== undefined && mob.health <= 0)) {
+    if (!mob || !mob.isValid || (mob.health !== null && mob.health <= 0)) {
       clearInterval(attackInterval);
       bot.pathfinder.setGoal(null);// Para de seguir
       return;
@@ -74,16 +74,15 @@ async function defenderContraMob(mob) {
 
 // Função para equipar uma espada (procura no inventário um item que contenha "sword")
 async function equiparEspada() {
-	
-	const blockInFront = bot.blockAt(bot.entity.position.offset(1, 0, 0));
+  const blockInFront = bot.blockAt(bot.entity.position.offset(1, 0, 0));
   const sword = bot.inventory.items().find(item => item.name.toLowerCase().includes('sword'));
   if (sword) {
     await bot.equip(sword, 'hand');
   } else if (blockInFront) {
-    if (blockInFront.name.includes("wood", 'hand')) {
-      await equiparFerramenta("axe", 'hand'); // Machados geralmente contêm "axe" no nome
+    if (blockInFront.name.includes("wood")) {
+      await equiparFerramenta("axe", 'hand');
     } else if (blockInFront.name.includes("stone")) {
-      await equiparFerramenta("pickaxe", 'hand'); // Picaretas geralmente contêm "pickaxe" no nome
+      await equiparFerramenta("pickaxe", 'hand');
     }
   }
 }
@@ -106,6 +105,17 @@ async function verificarOuDarFerramentas() {
   }
 }
 
+async function equiparFerramenta(toolName, hand) {
+    // Procura por uma ferramenta no inventário que corresponda ao nome
+    const ferramenta = bot.inventory.items().find(item => item.name.toLowerCase().includes(toolName.toLowerCase()));
+    if (ferramenta) {
+        await bot.equip(ferramenta, hand); // Equipa a ferramenta na mão especificada
+        bot.chat(`Ferramenta ${toolName} equipada na ${hand}!`);
+    } else {
+        bot.chat(`Ferramenta ${toolName} não encontrada no inventário.`);
+    }
+}
+
 // Resto dos comandos do bot
 bot.on('chat', async (username, message) => {
   if (username === bot.username) return;
@@ -117,6 +127,9 @@ bot.on('chat', async (username, message) => {
     console.log(`Prompt enviado para a API: ${userPrompt}`);
     if (userPrompt.toLowerCase() === 'oi') {
       bot.chat('Oi, tudo ok.');
+	  await bot.chat("/give AURORA minecraft:diamond_sword");
+      await bot.chat("/give AURORA minecraft:diamond_axe");
+      await bot.chat("/give AURORA minecraft:diamond_pickaxe");
       return;
     }
     try {
@@ -160,7 +173,7 @@ bot.on('chat', async (username, message) => {
     }
     bot.chat(`Seguindo, ${username}!`);
     const followGoal = new GoalFollow(target, 1);
-    bot.pathfinder.setGoal(followGoal, true);
+    bot.pathfinder.setGoal(followGoal);
   }
   // Comando para dormir
   else if (message.startsWith('!dormir')) {
@@ -205,31 +218,31 @@ bot.on('chat', async (username, message) => {
   }
   // Comando para equipar espada e armaduras
   else if (message.startsWith('!equipar')) {
-	  await verificarOuDarFerramentas();
+    await verificarOuDarFerramentas();
     try {
-      if (!bot.heldItem) {
-        bot.chat("Não estou segurando nenhum item para equipar como espada!");
-      } else {
-        await bot.equip(bot.heldItem, 'hand');
-        bot.chat("Espada equipada!");
-      }
-      const armorSlots = { head: 'helmet', chest: 'chestplate', legs: 'leggings', feet: 'boots' };
-      for (const [slot, armorType] of Object.entries(armorSlots)) {
-        const armorPiece = bot.inventory.items().find(item =>
-          item.name.toLowerCase().includes(armorType)
-        );
-        if (armorPiece) {
-          await bot.equip(armorPiece, slot);
-          bot.chat(`Equipado ${armorPiece.name} na posição ${slot}!`);
+        if (!bot.heldItem) {
+            bot.chat("Não estou segurando nenhum item para equipar como espada!");
         } else {
-          bot.chat(`Nenhum item compatível com ${armorType} encontrado.`);
+            await bot.equip(bot.heldItem, 'hand');
+            bot.chat("Espada equipada!");
         }
-      }
+        const armorSlots = { head: 'helmet', chest: 'chestplate', legs: 'leggings', feet: 'boots' };
+        for (const [slot, armorType] of Object.entries(armorSlots)) {
+            const armorPiece = bot.inventory.items().find(item =>
+                item.name.toLowerCase().includes(armorType)
+            );
+            if (armorPiece) {
+                await bot.equip(armorPiece, slot);
+                bot.chat(`Equipado ${armorPiece.name} na posição ${slot}!`);
+            } else {
+                bot.chat(`Nenhum item compatível com ${armorType} encontrado.`);
+            }
+        }
     } catch (err) {
-      console.error("Erro ao equipar itens:", err);
-      bot.chat("Erro ao equipar itens!");
+        console.error("Erro ao equipar itens:", err);
+        bot.chat("Erro ao equipar itens!");
     }
-  }
+}
   // Comando para pular
   else if (message.startsWith('!pular')) {
     bot.chat('Pulando!');
