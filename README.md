@@ -14,7 +14,9 @@ CREATE TABLE banco (
     saldo DECIMAL(10,2) DEFAULT 500,
     divida DECIMAL(10,2) DEFAULT 0,
     investimento DECIMAL(10,2) DEFAULT 0
-);```
+);
+
+//
 
 # Fluxo Grama
 ```mermaid
