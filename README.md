@@ -3,6 +3,19 @@
           screen -r ANNA
           screen -ls
           kill 00000
+# Agora, crie o banco chamado banco e sua tabela principal:
+```CREATE DATABASE banco;
+
+USE banco;
+
+CREATE TABLE banco (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    jogador VARCHAR(50) UNIQUE,
+    saldo DECIMAL(10,2) DEFAULT 500,
+    divida DECIMAL(10,2) DEFAULT 0,
+    investimento DECIMAL(10,2) DEFAULT 0
+);```
+
 # Fluxo Grama
 ```mermaid
 graph TD;
