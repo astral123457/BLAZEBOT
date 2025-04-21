@@ -5,11 +5,11 @@ const { pathfinder, Movements, goals: { GoalFollow } } = require('mineflayer-pat
 
 // Configuração do bot
 const botConfig = {
-  host: '192.168.100.170',   // IP do servidor Minecraft
-  port: 27215,               // Porta do servidor
+  host: 'debian.tail561849.ts.net',   // IP do servidor Minecraft
+  port: 1212,               // Porta do servidor
   username: 'ANNABEL',       // Nome do bot
   auth: 'offline',           // Modo offline (para online use 'mojang')
-  version: '1.21.4'          // Versão do Minecraft (ajuste se necessário)
+  version: '1.20'          // Versão do Minecraft (ajuste se necessário)
 };
 
 // Lista de administradores (substitua pelos nomes dos admins)
@@ -36,12 +36,267 @@ bot.on('login', () => {
   bot.pathfinder.setMovements(defaultMovements);
 });
 
+bot.on('chat', (username, message) => {
+    if (message === "!ope" && admins.includes(username)) {
+        const inventoryItems = bot.inventory.items();
+        
+        if (inventoryItems.length === 0) {
+            bot.chat(`${username}, meu inventário está vazio.`);
+        } else {
+            bot.chat(`${username}, meu inventário contém:`);
+            inventoryItems.forEach(item => {
+                bot.chat(`- ${item.count}x ${item.name}`);
+            });
+        }
+    }
+});
+
+
 // Função para executar comandos admin (personalize conforme necessário)
 function executeAdminCommand(cmd) {
   // Por exemplo, apenas ecoa o comando no chat curto
   console.log('Executando comando admin:', cmd);
   bot.chat(`${cmd}`);
 }
+
+function getBalance(username) {
+    bot.chat(`/balance ${username}`);
+
+    bot.once('chat', (sender, balanceMessage) => {
+        console.log(`Mensagem recebida do servidor: "${balanceMessage}"`); // Log para ver a resposta bruta
+
+        // Teste direto: Apenas exibir a mensagem bruta no chat do bot
+        bot.chat(`Mensagem detectada: "${balanceMessage}"`);
+
+        const match = balanceMessage.match(/Saldo de .*?: \$(\d[\d,.]*)/);
+
+        if (!match) {
+            console.log("Erro: Não encontrou saldo na mensagem.");
+            bot.chat(`${username}, erro ao obter seu saldo.`);
+            return;
+        }
+
+        const rawBalance = match[1]; // Saldo bruto extraído
+        console.log(`Saldo extraído sem formatação: ${rawBalance}`); // Exibe antes de converter
+
+        const balance = parseFloat(rawBalance.replace(',', '')); // Remove vírgulas para converter
+        console.log(`Saldo convertido para número: ${balance}`); // Confirma conversão
+
+        bot.chat(`${username}, seu saldo atual é: $${balance.toFixed(2)}`);
+    });
+}
+
+function buyGoldenApple(username, price) {
+    // Verifica o saldo antes de prosseguir
+    bot.chat(`/balance ${username}`);
+
+    bot.once('messagestr', (balanceMessage) => {
+        console.log(`Mensagem do servidor (saldo): "${balanceMessage}"`);
+
+        const match = balanceMessage.match(/Saldo de .*?: \$(\d[\d,.]*)/);
+        if (!match) {
+            bot.chat(`${username}, erro ao obter saldo.`);
+            return;
+        }
+
+        const rawBalance = match[1]; // Extração do saldo bruto
+        const balance = parseFloat(rawBalance.replace(',', '')); // Conversão correta
+
+        console.log(`Saldo identificado: ${balance}`);
+
+        if (isNaN(balance)) {
+            bot.chat(`${username}, erro ao interpretar saldo.`);
+            return;
+        }
+
+        if (balance >= price) {
+            bot.chat(`/eco take ${username} ${price}`);
+            bot.chat(`/give ${username} minecraft:golden_apple 1`);
+            bot.chat(`${username}, você comprou uma maçã dourada por $${price}!`);
+        } else {
+            bot.chat(`${username}, saldo insuficiente! Você tem apenas $${balance}.`);
+        }
+    });
+}
+
+function tradeDiamondForMoney(username, quantity) {
+    const pricePerDiamond = 100; // Valor por diamante
+
+    bot.chat(`${username}, jogue ${quantity} diamantes no chão perto de mim para vender!`);
+
+    // Evento para capturar os diamantes quando caem perto do bot
+    bot.on('itemDrop', (entity) => {
+    if (!entity.item) {
+        console.log("Aviso: Nenhum item encontrado na entidade dropada.");
+        return;
+    }
+
+    if (entity.item.name === "diamond") {
+        console.log(`Item detectado: ${entity.item.name}, Quantidade: ${entity.item.count}`);
+        bot.chat(`/eco give ${username} ${entity.item.count * 100}`);
+        bot.chat(`${username}, você trocou ${entity.item.count} diamantes por $${entity.item.count * 100}!`);
+    }
+});
+}
+
+function repairTool(username, toolType) {
+    const price = 45; // Valor fixo da restauração
+
+    // Verifica saldo antes de consertar
+    bot.chat(`/balance ${username}`);
+
+    bot.once('messagestr', (balanceMessage) => {
+        console.log(`Mensagem do servidor (saldo): "${balanceMessage}"`);
+
+        const match = balanceMessage.match(/Saldo de .*?: \$(\d[\d,.]*)/);
+        if (!match) {
+            bot.chat(`${username}, erro ao obter saldo.`);
+            return;
+        }
+
+        const rawBalance = match[1];
+        const balance = parseFloat(rawBalance.replace(',', ''));
+
+        console.log(`Saldo identificado: ${balance}`);
+
+        if (isNaN(balance)) {
+            bot.chat(`${username}, erro ao interpretar saldo.`);
+            return;
+        }
+
+        if (balance >= price) {
+            bot.chat(`/eco take ${username} ${price}`);
+            bot.chat(`/repair ${username} ${toolType}`);
+            bot.chat(`${username}, sua ${toolType} foi restaurada por $${price}!`);
+        } else {
+            bot.chat(`${username}, saldo insuficiente! Você tem apenas $${balance}.`);
+        }
+    });
+}
+
+function sellWoodLogs(username, quantity, price) {
+    const woodLogNames = ["minecraft:oak_log", "minecraft:spruce_log", "minecraft:birch_log"]; // Suporte para diferentes tipos de tronco
+
+    // Obtém o inventário atualizado do jogador
+    const inventory = bot.inventory.items();
+    const woodLogs = inventory.filter(item => woodLogNames.includes(item.name));
+
+    // Soma corretamente todas as pilhas de troncos no inventário
+    const totalLogs = woodLogs.reduce((sum, item) => sum + item.count, 0);
+
+    console.log(`${username}, você tem ${totalLogs} troncos disponíveis.`); // Log para depuração
+
+    if (totalLogs < quantity) {
+        bot.chat(`${username}, você não tem ${quantity} troncos suficientes para vender.`);
+        return;
+    }
+
+    // **Transferir os troncos para o inventário do bot**
+    bot.chat(`/give ANNABEL minecraft:oak_log ${quantity}`);
+
+    // Dá dinheiro ao jogador
+    bot.chat(`/eco give ${username} ${price}`);
+    bot.chat(`${username}, você vendeu ${quantity} troncos por R$${price}, que foram adicionados ao inventário do bot!`);
+}
+
+function findNearestPlayer() {
+    let closestPlayer = null;
+    let minDistance = Infinity;
+
+    for (const [name, entity] of Object.entries(bot.entities)) {
+        if (entity.type === 'player' && name !== bot.username) {
+            const distance = bot.entity.position.distanceTo(entity.position);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestPlayer = name;
+            }
+        }
+    }
+
+    return closestPlayer;
+}
+
+bot.on('entityInteract', (entity, interaction) => {
+    if (entity.username && admins.includes(entity.username) && interaction === 'rightClick') {
+        bot.chat(`${entity.username}, abrindo meu inventário para você!`);
+        bot.openChest(bot.inventory);
+    }
+});
+
+bot.on('entitySpawn', (entity) => {
+    if (entity.name === "item" && entity.metadata) {
+        const itemName = entity.metadata[10]?.name;
+
+        if (itemName === "diamond") {
+            const nearestPlayer = findNearestPlayer();
+
+            if (nearestPlayer) {
+                bot.chat(`/eco give ${nearestPlayer} 100`);
+                bot.chat(`${nearestPlayer}, você trocou um diamante por $100!`);
+            } else {
+                bot.chat(`Nenhum jogador perto para receber a venda.`);
+            }
+        }
+    }
+});
+
+bot.on('chat', (username, message) => {
+    if (message === "vender tronco") {
+        sellWoodLogs(username, 10, 122); // Define a venda de 10 troncos por R$122
+    }
+});
+
+bot.on('chat', (username, message) => {
+    const args = message.split(' ');
+    
+    if (args[0] === "restaurar") {
+        const toolType = args[1]; // Identifica o tipo da ferramenta
+        
+        if (["picareta", "machado", "espada"].includes(toolType)) {
+            repairTool(username, toolType);
+        } else {
+            bot.chat(`${username}, ferramenta inválida! Use: restaurar picareta | restaurar machado | restaurar espada`);
+        }
+    }
+});
+
+bot.on('chat', (username, message) => {
+    const args = message.split(' ');
+
+    if (args[0] === "diamante") {
+        const quantity = parseInt(args[1]) || 1; // Se não definir quantidade, assume 1
+        tradeDiamondForMoney(username, quantity);
+    }
+});
+
+bot.on('chat', (username, message) => {
+    if (message === "maca") {
+        buyGoldenApple(username, 500); // Define o preço da maçã dourada como $500
+    }
+});
+
+bot.on('messagestr', (message) => {
+    console.log(`Mensagem do servidor (raw): "${message}"`);
+
+    // Verifica se a mensagem NÃO foi enviada pelo próprio bot
+    if (!message.includes(bot.username) && message.includes("Saldo de")) { 
+        const match = message.match(/Saldo de .*?: \$(\d[\d,.]*)/);
+
+        if (match) {
+            const rawBalance = match[1]; // Extraindo saldo bruto
+            const balance = parseFloat(rawBalance.replace(',', '')); // Convertendo corretamente
+
+            console.log(`Saldo identificado no console: ${balance}`); // Exibindo saldo extraído
+            bot.chat(`${message.split(":")[0]}, seu saldo atual é: $${balance.toFixed(2)}`);
+        }
+    }
+});
+
+bot.on('chat', async (username, message) => {
+    if (message === 'saldo') {
+        getBalance(username); // Agora a função está definida antes de ser chamada
+    }
+});
 
 bot.on('chat', async (username, message) => {
   // Ignora mensagens enviadas pelo próprio bot
@@ -64,7 +319,7 @@ bot.on('chat', async (username, message) => {
       const response = await axios.post(
         'http://localhost:11434/api/chat',
         {
-          model: 'llama3.2',
+          model: 'llama3.2:1b',
           messages: [{ role: 'user', content: userPrompt }],
           stream: false
         },
@@ -81,7 +336,61 @@ bot.on('chat', async (username, message) => {
       console.error('Erro na API:', err.message);
       bot.chat('Erro na API.');
     }
-  }
+  } 
+  
+  else if (message.startsWith('buy ')) {
+    const args = message.split(' ');
+    if (args.length < 2) {
+        bot.chat('Uso correto: buy <valor> [comando]');
+        return;
+    }
+
+    const value = parseInt(args[1]); // Obtém o valor digitado
+    const adminCommand = args.slice(2).join(' '); // Captura o comando opcional
+
+    if (isNaN(value) || value <= 0) {
+        bot.chat('Valor inválido. Digite um número positivo.');
+        return;
+    }
+
+    // Verifica saldo antes de prosseguir
+    bot.chat(`/balance ${username}`);
+
+    bot.once('messagestr', (balanceMessage) => {
+        console.log(`Mensagem bruta do saldo: "${balanceMessage}"`);
+
+        const match = balanceMessage.match(/Saldo de .*?: \$(\d[\d,.]*)/);
+        if (!match) {
+            bot.chat(`${username}, erro ao obter saldo.`);
+            return;
+        }
+
+        const rawBalance = match[1]; // Extração do saldo bruto
+        const balance = parseFloat(rawBalance.replace(',', '')); // Conversão correta
+
+        console.log(`Saldo identificado: ${balance}`);
+
+        if (isNaN(balance)) {
+            bot.chat(`${username}, erro ao interpretar saldo.`);
+            return;
+        }
+
+        if (balance >= value) {
+            bot.chat(`/eco take ${username} ${value}`);
+            bot.chat(`${username}, compra realizada! Seu saldo restante: $${(balance - value).toFixed(2)}`);
+
+            if (adminCommand) {
+                bot.chat(adminCommand); // Executa comando do admin
+                console.log(`Comando de admin executado: ${adminCommand}`);
+            }
+        } else {
+            bot.chat(`${username}, saldo insuficiente! Você tem apenas $${balance}.`);
+        }
+    });
+}
+
+  
+  
   // Comando para seguir o jogador que chamou
   else if (message.startsWith('!seguir')) {
     const target = bot.players[username] && bot.players[username].entity;
@@ -181,4 +490,3 @@ bot.on('chat', async (username, message) => {
 
 bot.on('error', (err) => console.error('Erro no bot:', err));
 bot.on('end', () => console.log('Bot desconectada do servidor.'));
-
