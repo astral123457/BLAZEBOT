@@ -61,6 +61,10 @@ https://nodejs.org/en/download
               npm set audit false
               
               npm install mineflayer mineflayer-pathfinder minecraft-data
+
+              npm install mineflayer axios mineflayer-pathfinder
+
+              npm install mysql2
               
               screen -A -m -d -S ANNA node ANNABEL.js
               
