@@ -146,7 +146,21 @@ Seu niveu de memoria ram
 > [!NOTE]
 > Você deve ter pelo menos 8 GB de RAM disponíveis para executar os modelos 7B, 16 GB para executar os modelos 13B e 32 GB para executar os modelos 33B.
 
+node Banco.js
+os comandos tem que ser com ! e nao com /
+!balance → Mostra o saldo do jogador.
+!loan [quantia] → Solicita um empréstimo.
+!paydebt [quantia] → Paga parte da dívida.
+!invest [quantia] → Investimento com retorno futuro.
+!buyapple compra maca por 500 conto
 
+
+fiz no banco de dados o ruin que usa outro dinheiro
+aqui a gente tem a Des graça e o Sucesso o Significado de Annabel e Graça Agora, quando um jogador usa o comando /balance, se ele não estiver no banco de dados, será automaticamente registrado com um saldo inicial de $500! 
+Tente usar /balance no jogo e veja se seu nome é registrado corretamente! Se precisar de mais ajustes, me avise. 
+Quer adicionar um bônus de boas-vindas para novos jogadores? 
+
+![image](https://github.com/user-attachments/assets/5cc1de6e-fb1a-4cb7-a4ce-595849109d1e)
 
      
       
