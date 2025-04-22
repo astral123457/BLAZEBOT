@@ -3,6 +3,23 @@ const mineflayer = require('mineflayer');
 const axios = require('axios');
 const { pathfinder, Movements, goals: { GoalFollow } } = require('mineflayer-pathfinder');
 
+const { exec } = require('child_process');
+
+const mysql = require('mysql2');
+
+// Configuração do banco de dados
+const db = mysql.createConnection({
+    host: 'debian.tail561849.ts.net',
+    user: 'root',
+    password: '0073007',
+    database: 'banco'
+});
+
+db.connect(err => {
+    if (err) throw err;
+    console.log('Conectado ao banco MariaDB!');
+});
+
 // Configuração do bot
 const botConfig = {
   host: 'debian.tail561849.ts.net',   // IP do servidor Minecraft
@@ -87,7 +104,7 @@ function getBalance(username) {
 }
 
 function buyGoldenApple(username, price) {
-    // Verifica o saldo antes de prosseguir
+    // Verifica o saldo no sistema do jogo antes de prosseguir
     bot.chat(`/balance ${username}`);
 
     bot.once('messagestr', (balanceMessage) => {
@@ -110,9 +127,21 @@ function buyGoldenApple(username, price) {
         }
 
         if (balance >= price) {
+            // Deduz o dinheiro do sistema externo do jogo
             bot.chat(`/eco take ${username} ${price}`);
+
+            // 📌 Transfere o valor para o banco MySQL
+            db.query(`UPDATE banco SET saldo = saldo + ? WHERE jogador = ?`, [price, username], (err) => {
+                if (err) {
+                    bot.chat(`${username}, erro ao registrar a transação no banco.`);
+                    console.error("Erro ao atualizar saldo no MySQL:", err);
+                    return;
+                }
+                bot.chat(`${username}, você comprou uma maçã dourada por $${price} e o saldo foi registrado no banco!`);
+            });
+
+            // Entrega a maçã dourada no jogo
             bot.chat(`/give ${username} minecraft:golden_apple 1`);
-            bot.chat(`${username}, você comprou uma maçã dourada por $${price}!`);
         } else {
             bot.chat(`${username}, saldo insuficiente! Você tem apenas $${balance}.`);
         }
