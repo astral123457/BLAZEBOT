@@ -2,6 +2,7 @@
 const mineflayer = require('mineflayer');
 const axios = require('axios');
 const { pathfinder, Movements, goals: { GoalFollow } } = require('mineflayer-pathfinder');
+const fs = require('fs');
 
 const { exec } = require('child_process');
 
@@ -24,7 +25,7 @@ db.connect(err => {
 const botConfig = {
   host: 'debian.tail561849.ts.net', // IP do servidor Minecraft
   port: 1212, // Porta do servidor
-  username: 'ANNABEL', // Nome do bot
+  username: 'AMAURI', // Nome do bot
   auth: 'offline', // Modo offline (para online use 'mojang')
   version: '1.20' // Versão do Minecraft (ajuste se necessário)
 };
@@ -42,7 +43,7 @@ const bot = mineflayer.createBot(botConfig);
 bot.loadPlugin(pathfinder);
 
 bot.on('login', () => {
-  console.log('ANNABEL conectada ao servidor!');
+  console.log('AMAURI conectada ao servidor!');
   bot.chat(`Estou online! [BOT_ID:${Math.floor(1000 + Math.random() * 9000)}]`);
 });
 
@@ -102,6 +103,66 @@ function buyEnchantedApple(player) {
             });
         } else {
             bot.chat(`${player}, saldo insuficiente para comprar.`);
+        }
+    });
+}
+
+//📌 Função para comprar esmeraldas no banco
+function buyEmerald(player) {
+    const emeraldPrice = 250; // Define o preço da esmeralda
+
+    db.query(`SELECT saldo FROM banco WHERE jogador = ?`, [player], (err, result) => {
+        if (err) {
+            bot.chat(`${player}, erro ao acessar o banco.`);
+            console.error("Erro ao consultar saldo:", err);
+            return;
+        }
+
+        if (result.length > 0 && result[0].saldo >= emeraldPrice) {
+            // Deduz o saldo do jogador
+            db.query(`UPDATE banco SET saldo = saldo - ? WHERE jogador = ?`, [emeraldPrice, player], (err) => {
+                if (err) {
+                    bot.chat(`${player}, erro ao processar compra.`);
+                    console.error("Erro ao atualizar saldo:", err);
+                    return;
+                }
+
+                // Dá a esmeralda ao jogador
+                bot.chat(`${player}, você comprou uma esmeralda por $${emeraldPrice}!`);
+                bot.chat(`/give ${player} minecraft:emerald 1`);
+            });
+        } else {
+            bot.chat(`${player}, saldo insuficiente para comprar uma esmeralda.`);
+        }
+    });
+}
+
+//📌 Função para comprar picareta de Netherit
+function buyNetheritePickaxe(player) {
+    const pickaxePrice = 2000; // Define o preço da picareta
+
+    db.query(`SELECT saldo FROM banco WHERE jogador = ?`, [player], (err, result) => {
+        if (err) {
+            bot.chat(`${player}, erro ao acessar o banco.`);
+            console.error("Erro ao consultar saldo:", err);
+            return;
+        }
+
+        if (result.length > 0 && result[0].saldo >= pickaxePrice) {
+            // Deduz o saldo do jogador
+            db.query(`UPDATE banco SET saldo = saldo - ? WHERE jogador = ?`, [pickaxePrice, player], (err) => {
+                if (err) {
+                    bot.chat(`${player}, erro ao processar compra.`);
+                    console.error("Erro ao atualizar saldo:", err);
+                    return;
+                }
+
+                // Dá a picareta de Netherite ao jogador com encantamentos
+                bot.chat(`${player}, você comprou uma Picareta de Netherite por $${pickaxePrice}!`);
+                bot.chat(`/give ${player} minecraft:netherite_pickaxe{Enchantments:[{id:"minecraft:efficiency",lvl:5},{id:"minecraft:unbreaking",lvl:3},{id:"minecraft:fortune",lvl:3}]} 1`);
+            });
+        } else {
+            bot.chat(`${player}, saldo insuficiente para comprar uma Picareta de Netherite.`);
         }
     });
 }
@@ -183,26 +244,107 @@ async function checkBalancesol() {
     }
 }
 
-const { exec } = require('child_process');
-
-// 📌 Função para criar carteira PANDA FULL via Docker
 function generatePandaWallet(playerName) {
     return new Promise((resolve, reject) => {
-        const command = `sudo -u www-data docker run --rm -v /home/astral/astralcoin:/solana-token -v /home/astral/astralcoin/solana-data:/root/.config/solana heysolana solana-keygen new --no-passphrase 2>&1`;
-        
-        exec(command, (error, stdout) => {
+        const walletPath = `/solana-token/wallets/${playerName}_wallet.json`;
+
+        // 📌 Criação da carteira no Docker
+        const createCommand = `sudo -u www-data docker run --rm -v /home/astral/astralcoin/wallets:/solana-token/wallets \
+        -v /home/astral/astralcoin/solana-data:/root/.config/solana \
+        heysolana solana-keygen new --no-passphrase --outfile ${walletPath} --force 2>&1`;
+
+        exec(createCommand, (error, stdout) => {
             if (error) {
-                reject(`Erro ao criar carteira PANDA FULL: ${error.message}`);
+                reject(`Erro ao criar carteira PANDA FULL para ${playerName}: ${error.message}`);
                 return;
             }
-            
-            const walletData = stdout.trim().split('\n');
-            const walletAddress = walletData.find(line => line.includes('pubkey')).split(' ')[1];
-            const secretPhrase = walletData.find(line => line.includes('phrase')).split(': ')[1];
-            const privateKey = walletData.find(line => line.includes('private')).split(': ')[1];
 
-            resolve({ walletAddress, privateKey, secretPhrase });
+            console.log("Saída do comando:", stdout);
+
+            const walletData = stdout.trim().split('\n');
+
+            // Captura o endereço público (pubkey)
+            const walletAddressLine = walletData.find(line => line.includes('pubkey'));
+            const walletAddress = walletAddressLine ? walletAddressLine.split(': ')[1] : null;
+
+            // Captura a seed phrase
+            const seedIndex = walletData.findIndex(line => line.includes('Save this seed phrase to recover your new keypair:'));
+            const secretPhrase = seedIndex !== -1 ? walletData.slice(seedIndex + 1, seedIndex + 12).join(' ') : null;
+
+            if (!walletAddress || !secretPhrase) {
+                reject(`Erro ao extrair dados da carteira para ${playerName}. Formato inesperado.`);
+                return;
+            }
+
+            // 📌 Leitura do arquivo JSON via Docker
+            const readCommand = `sudo -u www-data docker run --rm -v /home/astral/astralcoin:/solana-token \
+            -v /home/astral/astralcoin/solana-data:/root/.config/solana \
+            heysolana cat ${walletPath}`;
+
+            exec(readCommand, (err, jsonOutput) => {
+                if (err) {
+                    reject(`Erro ao ler arquivo da carteira para ${playerName}: ${err.message}`);
+                    return;
+                }
+
+                try {
+                    const secretKeyArray = JSON.parse(jsonOutput.trim());
+                    const privateKey = secretKeyArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+
+                    // 📌 Imprimir no console para depuração
+                    console.log("📜 Seed Phrase:", secretPhrase);
+                    console.log("🔑 Chave Privada (Array):", secretKeyArray);
+                    console.log("🔒 Chave Privada (Hex):", privateKey);
+
+                    // 📌 Buscar o ID do jogador
+                    const getPlayerIdQuery = `SELECT id FROM jogadores WHERE nome = ?`;
+                    db.query(getPlayerIdQuery, [playerName], (playerErr, results) => {
+                        if (playerErr) {
+                            console.error("❌ Erro ao buscar jogador:", playerErr);
+                            reject(playerErr);
+                            return;
+                        }
+
+                        let jogadorId;
+
+                        if (results.length === 0) {
+                            // 📌 Jogador não encontrado, então cria um novo
+                            const insertPlayerQuery = `INSERT INTO jogadores (nome) VALUES (?)`;
+                            db.query(insertPlayerQuery, [playerName], (insertErr, insertResult) => {
+                                if (insertErr) {
+                                    console.error("❌ Erro ao cadastrar jogador:", insertErr);
+                                    reject(insertErr);
+                                    return;
+                                }
+
+                                jogadorId = insertResult.insertId;
+                                salvarCarteira(jogadorId, walletAddress, privateKey, secretPhrase, resolve, reject);
+                            });
+                        } else {
+                            jogadorId = results[0].id;
+                            salvarCarteira(jogadorId, walletAddress, privateKey, secretPhrase, resolve, reject);
+                        }
+                    });
+
+                } catch (error) {
+                    reject(`Erro ao processar JSON da carteira para ${playerName}: ${error.message}`);
+                }
+            });
         });
+    });
+}
+
+// 📌 Função auxiliar para salvar a carteira no banco
+function salvarCarteira(jogadorId, walletAddress, privateKey, secretPhrase, resolve, reject) {
+    const sql = `INSERT INTO carteiras (jogador_id, endereco, chave_privada, frase_secreta) VALUES (?, ?, ?, ?)`;
+    db.query(sql, [jogadorId, walletAddress, privateKey, secretPhrase], (dbErr) => {
+        if (dbErr) {
+            console.error("❌ Erro ao salvar carteira no banco:", dbErr);
+            reject(dbErr);
+            return;
+        }
+        console.log("✅ Carteira salva no banco com sucesso!");
+        resolve({ walletAddress, privateKey, secretPhrase });
     });
 }
 
@@ -211,19 +353,41 @@ async function registerPandaWallet(playerName) {
     try {
         const wallet = await generatePandaWallet(playerName);
 
-        db.query(`INSERT INTO jogadores (nome) VALUES (?) ON DUPLICATE KEY UPDATE nome = nome`, [playerName], (err, results) => {
-            if (err) throw err;
+        // 📌 Verifica se o jogador já existe no banco
+        db.query(`SELECT id FROM jogadores WHERE nome = ?`, [playerName], (err, result) => {
+            if (err) {
+                console.error(`Erro ao buscar jogador:`, err);
+                return;
+            }
 
-            const jogadorId = results.insertId || results[0]?.id;
+            let jogadorId;
 
-            db.query(`
-                INSERT INTO carteiras (jogador_id, endereco, chave_privada, frase_secreta) 
-                VALUES (?, ?, ?, ?)`, 
-                [jogadorId, wallet.walletAddress, wallet.privateKey, wallet.secretPhrase], (err) => {
-                    if (err) throw err;
-                    console.log(`Carteira PANDA FULL criada para ${playerName}: ${wallet.walletAddress}`);
-            });
+            if (result.length > 0) {
+                jogadorId = result[0].id; // Se o jogador existir, pega o ID
+            } else {
+                // Se não existir, insere e obtém o ID
+                db.query(`INSERT INTO jogadores (nome) VALUES (?)`, [playerName], (err, insertResult) => {
+                    if (err) {
+                        console.error(`Erro ao inserir jogador:`, err);
+                        return;
+                    }
+                    jogadorId = insertResult.insertId; // Obtém ID recém-criado
+
+                    // 📌 Agora insere a carteira no banco
+                    db.query(`
+                        INSERT INTO carteiras (jogador_id, endereco, chave_privada, frase_secreta) 
+                        VALUES (?, ?, ?, ?)`, 
+                        [jogadorId, wallet.walletAddress, wallet.privateKey, wallet.secretPhrase], (err) => {
+                            if (err) {
+                                console.error(`Erro ao salvar carteira no banco:`, err);
+                                return;
+                            }
+                            console.log(`Carteira PANDA FULL criada para ${playerName}: ${wallet.walletAddress}`);
+                    });
+                });
+            }
         });
+
     } catch (error) {
         console.error(error);
     }
@@ -309,6 +473,8 @@ function getPlayerWallet(playerName) {
         });
     });
 }
+
+
 
 
 
@@ -401,6 +567,12 @@ bot.on('chat', async (username, message) => {
             break;
         case '!buysword':
             buyEnchantedSword(username);
+            break;
+		case '!buyemerald':
+            buyEmerald(username);
+            break;
+		case '!buynetheritepickaxe':
+            buyNetheritePickaxe(username);
             break;
         default:
             bot.chat(`${username}, comando inválido! Use !help para ver a lista de comandos.`);
