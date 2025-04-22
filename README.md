@@ -16,6 +16,20 @@ CREATE TABLE banco (
     investimento DECIMAL(10,2) DEFAULT 0
 );
 
+CREATE TABLE jogadores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(50) UNIQUE NOT NULL
+);
+
+CREATE TABLE carteiras (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    jogador_id INT NOT NULL,
+    endereco VARCHAR(100) UNIQUE NOT NULL,
+    chave_privada TEXT NOT NULL,
+    frase_secreta TEXT NOT NULL,
+    FOREIGN KEY (jogador_id) REFERENCES jogadores(id) ON DELETE CASCADE
+);
+
 ```
 ![image](https://github.com/user-attachments/assets/c8564722-0171-4fb4-8b81-b459d966686a)
 
