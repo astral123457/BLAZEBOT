@@ -215,14 +215,15 @@ function buyEnchantedSword(player) {
     });
 }
 
-
-
-
 // 📌 Função para verificar saldo de SOL executando como www-data via Docker
-function getSolanaBalance() {
+function getSolanaBalance(walletAddress) {
     return new Promise((resolve, reject) => {
-        const command = 'sudo docker run --rm -v /home/astral/astralcoin:/solana-token -v /home/astral/astralcoin/solana-data:/root/.config/solana heysolana solana balance $walletAddress 2>&1';
-        
+        if (!walletAddress) {
+            reject('Endereço da carteira (walletAddress) não foi fornecido.');
+            return;
+        }
+        const command = `sudo docker run --rm -v /home/astral/astralcoin:/solana-token -v /home/astral/astralcoin/solana-data:/root/.config/solana heysolana solana balance ${walletAddress} 2>&1`;
+
         exec(command, (error, stdout) => {
             if (error) {
                 reject(`Erro ao executar comando Solana: ${error.message}`);
@@ -233,14 +234,37 @@ function getSolanaBalance() {
     });
 }
 
-// 📌 Executa a verificação de saldo de Solana
-async function checkBalancesol() {
+async function getPlayerWallet(username) {
     try {
-        const solBalance = await getSolanaBalance();
-        console.log(`Saldo Solana: ${solBalance}`);
-		bot.chat(`Saldo Solana: ${solBalance}`);
+        const queryResult = await database.query('SELECT walletAddress FROM players WHERE username = ?', [username]);
+        if (queryResult.length === 0) {
+            console.log(`Nenhuma carteira encontrada para o jogador: ${username}`);
+            return null;
+        }
+        console.log(`Carteira encontrada para ${username}:`, queryResult[0].walletAddress);
+        return queryResult[0].walletAddress;
     } catch (error) {
-        console.error(error);
+        console.error(`Erro ao consultar o banco para ${username}:`, error.message);
+        throw new Error('Erro ao acessar o banco de dados.');
+    }
+}
+
+// 📌 Executa a verificação de saldo de Solana
+async function checkBalancesol(username) {
+    try {
+        const playerWallet = await getPlayerWallet(username); // Busca a carteira pelo nome do jogador
+        if (!playerWallet) {
+            bot.chat(`${username}, você não possui uma carteira registrada.`);
+            return;
+        }
+        const solBalance = await getSolanaBalance(playerWallet); // Consulta o saldo da carteira obtida
+		
+        bot.chat(`${username}, sua carteira Solana: ${playerWallet}`);
+        bot.chat(`${username}, saldo de Solana: `);
+		bot.chat(`${username}, ${solBalance}`);
+    } catch (error) {
+        console.error(`Erro ao consultar saldo para ${username}:`, error.message);
+        bot.chat(`${username}, ocorreu um erro ao consultar seu saldo.`);
     }
 }
 
@@ -395,31 +419,103 @@ async function registerPandaWallet(playerName) {
 
 
 
-function getTokenBalance(playerName) {
+// 📌 Função para obter saldo
+function getTokenBalance(playerName, bot, username) {
     return new Promise(async (resolve, reject) => {
         try {
             // 📌 Obtendo a carteira do jogador
             const playerWallet = await getPlayerWallet(playerName);
             if (!playerWallet) {
-                reject(`${playerName}, você ainda não tem uma carteira PANDA FULL registrada.`);
+                const msg = `${playerName}, você ainda não tem uma carteira PANDA FULL registrada.`;
+                bot.chat(msg);
+                reject(msg);
                 return;
             }
 
-            // 📌 Executando comando para verificar saldo na carteira do jogador
-            const command = `sudo -u www-data docker run --rm -v /home/astral/astralcoin:/solana-token -v /home/astral/astralcoin/solana-data:/root/.config/solana heysolana spl-token balance ${playerWallet} 2>&1`;
+            // 📌 Verificar saldo do jogador
+            const checkBalance = (walletAddress) => {
+                return new Promise((resolve, reject) => {
+                    const balanceCommand = `sudo -u www-data docker run --rm -v /home/astral/astralcoin:/solana-token \
+                    -v /home/astral/astralcoin/solana-data:/root/.config/solana \
+                    heysolana spl-token balance ${walletAddress}`;
+                    exec(balanceCommand, (error, stdout) => {
+                        if (error) {
+                            const msg = `Erro ao buscar saldo da carteira do jogador ${playerName}: ${error.message}`;
+                            bot.chat(msg);
+                            reject(msg);
+                            return;
+                        }
+                        resolve(stdout.trim());
+                    });
+                });
+            };
 
-            exec(command, (error, stdout) => {
-                if (error) {
-                    reject(`Erro ao buscar saldo da carteira do jogador ${playerName}: ${error.message}`);
+            // 📌 Transferir 10 tokens Panda Full
+            const transferTokens = (walletAddress) => {
+                return new Promise((resolve, reject) => {
+                    const transferCommand = `sudo -u www-data docker run --rm -v /home/astral/astralcoin:/solana-token \
+                    -v /home/astral/astralcoin/solana-data:/root/.config/solana \
+                    heysolana spl-token transfer mntjKpj39H1JJD9vR2Brvt2PPFkoLgbixpoNUYQXtu2 10 ${walletAddress}`;
+                    exec(transferCommand, (error, stdout) => {
+                        if (error) {
+                            const msg = `Erro ao transferir tokens para o jogador ${playerName}: ${error.message}`;
+                            bot.chat(msg);
+                            reject(msg);
+                            return;
+                        }
+                        resolve(stdout.trim());
+                    });
+                });
+            };
+
+            // 📌 Tenta buscar saldo
+            let balance;
+            try {
+                balance = await checkBalance(playerWallet);
+            } catch (error) {
+                if (error.includes("not found")) {
+                    const msg = `Conta para o token não encontrada. Criando para ${playerName} e transferindo 10 Panda Full...`;
+                    bot.chat(msg);
+                    console.log(msg);
+
+                    await transferTokens(playerWallet); // Transfere os tokens na primeira consulta
+                    balance = await checkBalance(playerWallet); // Consulta novamente o saldo
+                } else {
+                    bot.chat(`Erro inesperado: ${error}`);
+                    console.error(error);
+                    reject(error);
                     return;
                 }
-                resolve(stdout.trim());
-            });
+            }
+
+            // 📌 Retorna o saldo atualizado
+            bot.chat(`${playerName}, saldo PANDA FULL atualizado: ${balance}`);
+            resolve(balance);
 
         } catch (error) {
-            reject(`Erro ao verificar carteira do jogador ${playerName}: ${error.message}`);
+            const msg = `Erro ao verificar ou consultar saldo para ${playerName}: ${error.message}`;
+            bot.chat(msg);
+            console.error(error);
+            reject(msg);
         }
     });
+}
+
+// 📌 Switch case para o comando !pandabalance
+async function handleCommand(command, username, bot) {
+    switch (command) {
+        case '!pandabalance':
+            try {
+                // 📌 Obtém o saldo chamando a função com o nome do jogador
+                const balance = await getTokenBalance(username);
+                bot.chat(`${username}, seu saldo PANDA FULL: ${balance}`);
+            } catch (error) {
+                bot.chat(`${username}, erro ao consultar saldo: ${error}`);
+            }
+            break;
+
+        // Outros comandos...
+    }
 }
 
 // 📌 Função para transferir tokens PANDA FULL
@@ -520,10 +616,11 @@ bot.on('chat', async (username, message) => {
             break;
         case '!pandabalance':
             try {
-                const balance = await getTokenBalance(playerWallet);
-                bot.chat(`${username}, saldo PANDA FULL: ${balance}`);
+                // 📌 Obtém o saldo chamando a função com o nome do jogador
+                const balance = await getTokenBalance(username);
+                bot.chat(`${username}, seu saldo PANDA FULL: ${balance}`);
             } catch (error) {
-                bot.chat(`${username}, erro ao consultar saldo.`);
+                bot.chat(`${username}, erro ao consultar saldo: ${error}`);
             }
             break;
         case '!transferpanda':
@@ -542,7 +639,7 @@ bot.on('chat', async (username, message) => {
     }
     break;
         case '!solana':
-            checkBalancesol();
+            checkBalancesol(username);
             break;
         case '!balance':
             checkBalance(username);
