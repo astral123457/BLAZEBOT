@@ -268,7 +268,7 @@ async function buyGameCurrency(player, solAmount, gameCurrencyAmount) {
         }
 
         // 📌 Comando para transferência via Docker
-        const transferCommand = `sudo -u www-data docker run --rm -v /home/astral/astralcoin:/solana-token -v /home/astral/astralcoin/solana-data:/root/.config/solana heysolana solana transfer dadhcDXHiHDrWkT2Z4pSZyF6HWmHwQMG3HtGciwccVP ${solAmount} --from /solana-token/wallets/${player}_wallet.json --allow-unfunded-recipient`;
+        const transferCommand = `sudo -u www-data docker run --rm -v /home/astral/astralcoin:/solana-token -v /home/astral/astralcoin/solana-data:/root/.config/solana heysolana solana transfer dadhcDXHiHDrWkT2Z4pSZyF6HWmHwQMG3HtGciwccVP ${solAmount} --keypair /solana-token/wallets/${player}_wallet.json --allow-unfunded-recipient`;
 
         exec(transferCommand, async (error, stdout) => {
             if (error) {
@@ -679,7 +679,7 @@ async function transferBetweenPlayers(sender, amount, recipient) {
         }
 
         // 📌 Comando para realizar a transferência via Docker
-        const transferCommand = `sudo -u www-data docker run --rm -v /home/astral/astralcoin:/solana-token -v /home/astral/astralcoin/solana-data:/root/.config/solana heysolana solana transfer ${recipientWallet} ${amount} --from /solana-token/wallets/${sender}_wallet.json --allow-unfunded-recipient`;
+        const transferCommand = `sudo -u www-data docker run --rm -v /home/astral/astralcoin:/solana-token -v /home/astral/astralcoin/solana-data:/root/.config/solana heysolana solana transfer ${recipientWallet} ${amount} --keypair /solana-token/wallets/${sender}_wallet.json --allow-unfunded-recipient`;
 
         exec(transferCommand, (error, stdout, stderr) => {
             if (error) {
