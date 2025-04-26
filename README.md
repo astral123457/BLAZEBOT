@@ -30,6 +30,16 @@ CREATE TABLE carteiras (
     FOREIGN KEY (jogador_id) REFERENCES jogadores(id) ON DELETE CASCADE
 );
 
+CREATE TABLE livro_caixa (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    jogador VARCHAR(255) NOT NULL,
+    tipo_transacao VARCHAR(255) NOT NULL, -- Ex: "compra", "transferencia"
+    valor FLOAT NOT NULL,
+    moeda VARCHAR(10) NOT NULL, -- Ex: "SOL", "moedas"
+    assinatura VARCHAR(255) NOT NULL, -- Signature gerada na transação
+    data_hora DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 ```
 ![image](https://github.com/user-attachments/assets/c8564722-0171-4fb4-8b81-b459d966686a)
 
