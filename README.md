@@ -257,5 +257,33 @@ Digite taskschd.msc e pressione Enter. Isso abrirá diretamente o Agendador de T
 
 ![image](https://github.com/user-attachments/assets/564ffcff-8a54-4d43-b406-96568e3767c2)
 
+Bot BANCO.js
+
+![image](https://github.com/user-attachments/assets/0a2d21de-9d89-4cd3-8073-0b205522d2b1)
+
+coamndos:
+
+!createpandawallet // cria sua carteira caso nao tenha uma carteira 
+!pandabalance // ainda nao esta funcionando esperimental para moeda pandafull
+!transferpanda // ainda nao esta funcionando esperimental para moeda pandafull
+!solana // mostra o saldo da carteira solana
+!balance // mostra o saldo da moeda do jogo
+!loan <value>//pega emprestimo
+!paydebt <value> <player>// paga outro jogador com a moeda do jogo
+!invest <value> // investe um valor para receber de volta com um tempo acoes
+!buyapple // compra uma maça encantanda por 500 moedas do jogo
+!buyaxe // nao esta funcionando 
+!buypickaxe // nao esta funcionando
+!buysword // nao esta funcionando
+!buyemerald // compra esmeralda por 250 moedas do jogo
+!compra // compra 3000 moedas por 3 sol criptomoeda dev
+!transferencia <valor> <player> //  tranfere o Sol dev criptomoeda para do seu amigo exemplo: !transferencia 2 BerserkerWolf
+!buynetheritepickaxe // nao esta funcionando
+!transacoes //mostra transacoes da ultima hora
+
+![image](https://github.com/user-attachments/assets/c580036e-9a0c-486b-8aa5-4f6bf8e1ca31)
+
+
+
 
 
