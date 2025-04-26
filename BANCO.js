@@ -249,6 +249,91 @@ async function getPlayerWallet(username) {
     }
 }
 
+//📌 Função compra moeda 3 sol por 3000 moedas
+
+async function buyGameCurrency(player, solAmount, gameCurrencyAmount) {
+    try {
+        // 📌 Verifica se o jogador tem uma carteira registrada
+        const playerWallet = await getPlayerWallet(player);
+        if (!playerWallet) {
+            bot.chat(`${player}, você ainda não possui uma carteira registrada.`);
+            return;
+        }
+
+        // 📌 Verifica saldo de SOL do jogador
+        const solBalance = await getSolanaBalance(playerWallet);
+        if (parseFloat(solBalance) < solAmount) {
+            bot.chat(`${player}, você não possui saldo suficiente de SOL. Saldo atual: ${solBalance}`);
+            return;
+        }
+
+        // 📌 Comando para transferência via Docker
+        const transferCommand = `sudo -u www-data docker run --rm -v /home/astral/astralcoin:/solana-token -v /home/astral/astralcoin/solana-data:/root/.config/solana heysolana solana transfer dadhcDXHiHDrWkT2Z4pSZyF6HWmHwQMG3HtGciwccVP ${solAmount} --from /solana-token/wallets/${player}_wallet.json --allow-unfunded-recipient`;
+
+        exec(transferCommand, async (error, stdout) => {
+            if (error) {
+                bot.chat(`${player}, houve um erro ao realizar a transferência: ${error.message}`);
+                return;
+            }
+
+            // 📌 Extraindo a assinatura da transação
+            const signatureMatch = stdout.match(/Signature: ([a-zA-Z0-9]+)/);
+            const signature = signatureMatch ? signatureMatch[1] : null;
+
+            if (!signature) {
+                bot.chat(`${player}, não foi possível obter a assinatura da transação. Consulte um administrador.`);
+                return;
+            }
+
+            // 📌 Atualiza saldo do jogador no banco de dados
+            db.query(`UPDATE banco SET saldo = saldo + ? WHERE jogador = ?`, [gameCurrencyAmount, player], (err) => {
+                if (err) {
+                    bot.chat(`${player}, houve um erro ao adicionar moedas ao seu saldo.`);
+                    console.error(`Erro ao atualizar saldo no banco: ${err.message}`);
+                    return;
+                }
+
+                // 📌 Registra transação no livro caixa
+                db.query(
+                    `INSERT INTO livro_caixa (jogador, tipo_transacao, valor, moeda, assinatura) VALUES (?, ?, ?, ?, ?)`,
+                    [player, 'compra', solAmount, 'SOL', signature],
+                    (err) => {
+                        if (err) {
+                            console.error(`Erro ao registrar no livro caixa: ${err.message}`);
+                            return;
+                        }
+                        bot.chat(`${player}, você comprou ${gameCurrencyAmount} moedas por ${solAmount} SOL!`);
+                        bot.chat(`Transação registrada com assinatura: ${signature}`);
+                    }
+                );
+            });
+        });
+    } catch (error) {
+        console.error(`Erro ao processar compra para ${player}: ${error.message}`);
+        bot.chat(`${player}, ocorreu um erro inesperado ao processar sua compra. Consulte um administrador.`);
+    }
+}
+
+//📌 Consultando o Histórico no Livro Caixa
+function viewTransactionHistory(player) {
+    db.query(`SELECT * FROM livro_caixa WHERE jogador = ? ORDER BY data_hora DESC LIMIT 10`, [player], (err, results) => {
+        if (err) {
+            bot.chat(`${player}, houve um erro ao consultar seu histórico de transações.`);
+            console.error(err.message);
+            return;
+        }
+
+        if (results.length === 0) {
+            bot.chat(`${player}, você ainda não realizou nenhuma transação.`);
+        } else {
+            bot.chat(`${player}, aqui estão suas últimas transações:`);
+            results.forEach((transacao, index) => {
+                bot.chat(`#${index + 1}: ${transacao.tipo_transacao} de ${transacao.valor} ${transacao.moeda} (Assinatura: ${transacao.assinatura})`);
+            });
+        }
+    });
+}
+
 // 📌 Executa a verificação de saldo de Solana
 async function checkBalancesol(username) {
     try {
@@ -571,6 +656,68 @@ function getPlayerWallet(playerName) {
 }
 
 
+async function transferBetweenPlayers(sender, amount, recipient) {
+    try {
+        // 📌 Verifica as carteiras dos jogadores
+        const senderWallet = await getPlayerWallet(sender);
+        const recipientWallet = await getPlayerWallet(recipient);
+
+        if (!senderWallet) {
+            bot.chat(`${sender}, você não possui uma carteira registrada.`);
+            return;
+        }
+        if (!recipientWallet) {
+            bot.chat(`${recipient} não possui uma carteira registrada. A transferência não pode ser concluída.`);
+            return;
+        }
+
+        // 📌 Verifica o saldo do remetente
+        const senderSolBalance = await getSolanaBalance(senderWallet);
+        if (parseFloat(senderSolBalance) < amount) {
+            bot.chat(`${sender}, você não tem saldo suficiente de SOL. Saldo atual: ${senderSolBalance}`);
+            return;
+        }
+
+        // 📌 Comando para realizar a transferência via Docker
+        const transferCommand = `sudo -u www-data docker run --rm -v /home/astral/astralcoin:/solana-token -v /home/astral/astralcoin/solana-data:/root/.config/solana heysolana solana transfer ${recipientWallet} ${amount} --from /solana-token/wallets/${sender}_wallet.json --allow-unfunded-recipient`;
+
+        exec(transferCommand, (error, stdout, stderr) => {
+            if (error) {
+                bot.chat(`${sender}, houve um erro ao realizar a transferência: ${stderr}`);
+                console.error(`Erro na transferência: ${stderr}`);
+                return;
+            }
+
+            // 📌 Extraindo a assinatura da transação
+            const signatureMatch = stdout.match(/Signature: ([a-zA-Z0-9]+)/);
+            const signature = signatureMatch ? signatureMatch[1] : null;
+
+            if (!signature) {
+                bot.chat(`${sender}, a transferência falhou. Não foi possível obter a assinatura da transação.`);
+                return;
+            }
+
+            // 📌 Confirmação da transferência
+            bot.chat(`${sender}, transferência de ${amount} SOL para ${recipient} concluída com sucesso! Assinatura: ${signature}`);
+
+            // 📌 Registro no livro caixa
+            db.query(
+                `INSERT INTO livro_caixa (jogador, tipo_transacao, valor, moeda, assinatura) VALUES (?, ?, ?, ?, ?)`,
+                [sender, 'transferência', amount, 'SOL', signature],
+                (err) => {
+                    if (err) {
+                        console.error(`Erro ao registrar no livro caixa: ${err.message}`);
+                    }
+                }
+            );
+        });
+    } catch (error) {
+        console.error(`Erro ao processar transferência entre ${sender} e ${recipient}: ${error.message}`);
+        bot.chat(`${sender}, houve um erro inesperado ao processar sua transferência.`);
+    }
+}
+
+
 
 
 
@@ -668,8 +815,30 @@ bot.on('chat', async (username, message) => {
 		case '!buyemerald':
             buyEmerald(username);
             break;
+		case '!compra':// buycurrency compra moeda
+            await buyGameCurrency(username, 3, 3000);
+            break;
+		case '!transferencia':// buycurrency compra moeda
+            if (args.length === 3) {
+            const amount = parseFloat(args[1]); // Quantidade de SOL
+            const recipient = args[2]; // Destinatário
+
+            if (isNaN(amount) || amount <= 0) {
+                bot.chat(`${username}, valor inválido. Use: !transferência <valor> <player_destinatário>`);
+                return;
+            }
+
+            // Chama a função para processar a transferência
+            await transferBetweenPlayers(username, amount, recipient);
+			} else {
+				bot.chat(`${username}, uso incorreto do comando. Tente: !transferência <valor> <player_destinatário>`);
+			}
+            break;
 		case '!buynetheritepickaxe':
             buyNetheritePickaxe(username);
+            break;
+		case '!transacoes':
+            viewTransactionHistory(username);
             break;
         default:
             bot.chat(`${username}, comando inválido! Use !help para ver a lista de comandos.`);
