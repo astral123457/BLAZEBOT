@@ -317,6 +317,8 @@ coamndos:
 
 ![image](https://github.com/user-attachments/assets/c580036e-9a0c-486b-8aa5-4f6bf8e1ca31)
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/H2H411P12P)
+
 
 
 
